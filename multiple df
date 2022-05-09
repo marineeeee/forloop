@@ -1,0 +1,93 @@
+
+  for (yr in yrs) {
+    
+    for (x in 1:ncol(xultimatdata)) {
+      
+      for (y in 1:ncol(yultimatedata)) {
+        
+        
+        prems<- data.frame(iso3c = c(ultimatedata$iso3c),
+                           date= c(ultimatedata$date),
+                           x= c(xultimatdata[,x]),
+                           y= (yultimatedata[,y])) 
+        prems[prems== 0.00]<- NA
+        
+        prems<- prems[!is.na(prems$x),]
+        prems<- prems[!is.na(prems$y),]              #work no more NA
+        
+        assign(paste0('altdf', x, y,sep = ''),prems)
+     
+        all_df <- lapply(ls(pattern="altdf"), function(x) get(x))
+        rm(prems)
+      } 
+    }
+     
+   for (i in length(all_df)) {          #marche pas si mets 1: ---> datyr marche pas apres
+     
+   
+  for (yr in yrs) {
+   
+     datyr<-filter(all_df[[i]],date == yr)
+       
+       datyr<-data.frame(datyr) #datyr ce qu'on veut mais la qu'une année
+       
+       sumyr<- lm(datyr[ ,4]~log(datyr[ ,3]), datyr)                                                    #  sumyr<- lm(datyr[ ,3]~log(datyr[ ,4]), datyr) }
+       
+ sumyr<-summary(sumyr)
+       
+   
+       Rsq<-sumyr$r.squared
+       Rsq<- c('r.squared', Rsq)
+       adjR<- sumyr$adj.r.squared
+       adjR<-c('adjR.sq', adjR)                                                        # adjR<- sumyr['adj.r.squared']
+                                                                                       #  adjR<-c('adjR.sq', adjR)
+    
+      
+    sumyr<-data.frame(sumyr$coefficients)
+      
+      sumyr<- pivot_longer(sumyr, cols= 1:4, names_to = 'sumres', values_to = 'year' )
+      
+      
+      sumyr<- rbind(sumyr, Rsq)
+      sumyr<- rbind(sumyr, adjR)
+      
+      sumyr$year<-as.numeric(sumyr$year)
+     
+      
+      assign(paste0('years', yr,-x,-y, sep = ''),sumyr)  #sort tout les tableau !!
+       # must have 24*66
+      
+      
+    }       #sort juste tableau 6-11
+    
+all_year<- lapply(ls(pattern="years"), function(x) get(x))
+
+final_year<-bind_cols(all_year)                                              #[i]final_year marche pas donne df 2015-
+    
+   colnames(final_year)[colnames(final_year)=='sumres...1']<- 'Results'
+   final_year<- final_year %>% select(-contains("sumres"))
+    
+    colnames(final_year) <- c('Results', yrs)
+    
+    final_year<-t(final_year)
+    
+    final_year<- as.data.frame(final_year)
+    colnames(final_year)<-as.character(final_year[1,])
+    final_year<-final_year[-c(1),]
+    colnames(final_year)<- c('Estimate.1','std.Error.1', 't.value.1','pr.t.1',
+                                 'Estimate.2','std.Error.2', 't.value.2', 'pr.t.2',
+                                'Rsq','adjR')
+    
+    final_year<- rownames_to_column(final_year, 'year')
+        
+ 
+    assign(paste0('final_year',-x,-y, sep = ''),final_year) #sort tout les tableau !!
+  the_final<- lapply(ls(pattern="final_year"), function(x) get(x))
+   
+  
+   rm(list=ls()[grepl('years', ls())])
+    rm(list=ls()[grepl('altdf', ls())])  
+      
+   } 
+    
+    }
